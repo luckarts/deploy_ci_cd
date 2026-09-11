@@ -1,0 +1,120 @@
+{
+  "title": "CrowdSec — Sécurité",
+  "uid": "poker-training-crowdsec",
+  "tags": ["poker-training", "security", "crowdsec"],
+  "timezone": "browser",
+  "editable": true,
+  "refresh": "30s",
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "templating": {
+    "list": []
+  },
+  "annotations": {
+    "list": []
+  },
+  "panels": [
+    {
+      "title": "IPs Bannies",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "id": 1,
+      "targets": [
+        {
+          "expr": "crowdsec_decisions_total",
+          "legendFormat": "IPs bannies",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "title": "État du Bouncer",
+      "type": "stat",
+      "gridPos": { "h": 8, "w": 6, "x": 12, "y": 0 },
+      "id": 2,
+      "targets": [
+        {
+          "expr": "crowdsec_bouncers_total",
+          "legendFormat": "Bouncers actifs",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "green", "value": 1 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "title": "Top 10 IPs Attaquantes",
+      "type": "table",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "id": 3,
+      "targets": [
+        {
+          "expr": "topk(10, crowdsec_decisions_total)",
+          "legendFormat": "{{ source_ip }}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "title": "Types d'Attaques",
+      "type": "piechart",
+      "gridPos": { "h": 8, "w": 6, "x": 12, "y": 8 },
+      "id": 4,
+      "targets": [
+        {
+          "expr": "sum by(scenario) (crowdsec_decisions_total)",
+          "legendFormat": "{{ scenario }}",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "displayLabels": ["name", "percent"],
+        "legend": { "displayMode": "list", "placement": "right" },
+        "pieType": "pie"
+      }
+    },
+    {
+      "title": "Bans par Heure",
+      "type": "heatmap",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+      "id": 5,
+      "targets": [
+        {
+          "expr": "rate(crowdsec_decisions_total[1h])",
+          "legendFormat": "bans/h",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "title": "Alertes CrowdSec Actives",
+      "type": "table",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+      "id": 6,
+      "targets": [
+        {
+          "expr": "crowdsec_alerts_total",
+          "legendFormat": "{{ scenario }}",
+          "refId": "A"
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 38,
+  "version": 1
+}

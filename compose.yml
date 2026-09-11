@@ -1,0 +1,88 @@
+# Portfolio — Next.js + PostgreSQL
+# See BLOG_DEPLOY.md for architecture overview.
+services:
+  database:
+    image: postgres:16-alpine
+    container_name: ${COMPOSE_PROJECT_NAME:?COMPOSE_PROJECT_NAME is required}-database
+    restart: unless-stopped
+    labels:
+      # Watchtower : surveiller les mises à jour de l'image postgres
+      - "com.centurylinklabs.watchtower.enable=true"
+      - "com.centurylinklabs.watchtower.monitor-only=${WATCHTOWER_MONITOR_ONLY:-false}"
+      # Scope : chaque environnement (prod/staging) a sa propre instance watchtower
+      - "com.centurylinklabs.watchtower.scope=${ENV:?ENV is required}"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-portfolio}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGRES_USER: ${POSTGRES_USER:-portfolio}
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "pg_isready",
+          "-d",
+          "${POSTGRES_DB:-portfolio}",
+          "-U",
+          "${POSTGRES_USER:-portfolio}",
+        ]
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    volumes:
+      - db_data:/var/lib/postgresql/data:rw
+    networks:
+      - app-network
+
+  nextjs:
+    image: ${REGISTRY_HOST:-registry.bachelart.fr}/portfolio:${IMAGE_TAG:?IMAGE_TAG is required}
+    container_name: ${COMPOSE_PROJECT_NAME:?COMPOSE_PROJECT_NAME is required}-nextjs
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      HOSTNAME: "0.0.0.0"
+      DATABASE_URL: postgresql://${POSTGRES_USER:-portfolio}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@database:5432/${POSTGRES_DB:-portfolio}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?BETTER_AUTH_SECRET is required}
+      BETTER_AUTH_URL: https://www.${FRONTEND_HOST:?FRONTEND_HOST is required}
+      NEXT_PUBLIC_BETTER_AUTH_URL: https://www.${FRONTEND_HOST:?FRONTEND_HOST is required}
+      AUTH_URL: https://www.${FRONTEND_HOST}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+    depends_on:
+      database:
+        condition: service_healthy
+    networks:
+      - app-network
+      - traefik-web
+      - monitoring-network
+    labels:
+      # Watchtower : surveiller les nouvelles images poussées sur le registre
+      - "com.centurylinklabs.watchtower.enable=true"
+      - "com.centurylinklabs.watchtower.monitor-only=${WATCHTOWER_MONITOR_ONLY:-false}"
+      - "com.centurylinklabs.watchtower.scope=${ENV:?ENV is required}"
+      # Routeur principal : sert l'app sur www.bachelart.fr
+      - "traefik.enable=true"
+      - "traefik.http.routers.portfolio-${ENV:?ENV is required}.rule=Host(`www.${FRONTEND_HOST:?FRONTEND_HOST is required}`)"
+      - "traefik.http.routers.portfolio-${ENV:?ENV is required}.entrypoints=websecure"
+      - "traefik.http.routers.portfolio-${ENV:?ENV is required}.tls.certresolver=letsencrypt"
+      # (pas de traefik.http.services — Traefik auto-génère le nom de service
+      # à partir du nom de projet Docker Compose, évitant les collisions prod/staging)
+      # apex (sans www) → redirection 301 vers www
+      - "traefik.http.routers.portfolio-${ENV:?ENV is required}-apex.rule=Host(`${FRONTEND_HOST:?FRONTEND_HOST is required}`)"
+      - "traefik.http.routers.portfolio-${ENV:?ENV is required}-apex.entrypoints=websecure"
+      - "traefik.http.routers.portfolio-${ENV:?ENV is required}-apex.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.portfolio-${ENV:?ENV is required}-apex.middlewares=redirect-to-www"
+      - "traefik.http.middlewares.redirect-to-www.redirectregex.regex=^https://(${FRONTEND_HOST:?FRONTEND_HOST is required})/(.*)"
+      - "traefik.http.middlewares.redirect-to-www.redirectregex.replacement=https://www.$${1}/$${2}"
+      - "traefik.http.middlewares.redirect-to-www.redirectregex.permanent=true"
+
+volumes:
+  db_data:
+    name: ${ENV:?ENV is required}_db_data
+
+networks:
+  app-network:
+    driver: bridge
+  traefik-web:
+    external: true
+  monitoring-network:
+    external: true

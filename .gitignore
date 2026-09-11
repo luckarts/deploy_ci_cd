@@ -1,0 +1,9 @@
+# Secrets — never commit
+.env
+.env.*
+!.env.*.example
+traefik/acme.json
+htpasswd
+
+# OS / editor cruft
+.DS_Store

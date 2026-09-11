@@ -1,0 +1,38 @@
+groups:
+  - name: security
+    rules:
+      - alert: SSHBruteforceDetected
+        expr: rate(crowdsec_decisions_total{scenario="crowdsecurity/ssh-bf"}[5m]) > 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "SSH bruteforce détecté"
+          description: "CrowdSec a détecté une tentative SSH bruteforce — IP bannie."
+
+      - alert: CrowdSecBannedIPs
+        expr: crowdsec_decisions_total > 5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Plus de 5 IPs bannies simultanément"
+          description: "{{ $value }} IPs sont actuellement bannies par CrowdSec."
+
+      - alert: CrowdSecDown
+        expr: up{job="crowdsec"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "CrowdSec est down"
+          description: "CrowdSec n'est plus accessible — vérifier le conteneur."
+
+      - alert: HTTPAttackDetected
+        expr: rate(crowdsec_decisions_total{scenario=~"crowdsecurity/http-.*"}[5m]) > 0
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Attaque HTTP détectée"
+          description: "CrowdSec a détecté une attaque HTTP (scan/crawl/bad-ua)."

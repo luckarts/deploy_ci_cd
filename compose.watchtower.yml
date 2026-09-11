@@ -1,0 +1,76 @@
+# Watchtower — Auto-redéploiement automatique des conteneurs
+#
+# Watchtower scrute le registre Docker et, quand une nouvelle image
+# correspondant au tag actuel est poussée, il redémarre le conteneur
+# avec l'image fraîche — sans intervention humaine.
+#
+# Pour que Watchtower surveille un conteneur, ce conteneur doit avoir
+# le label : com.centurylinklabs.watchtower.enable=true
+# (déjà ajouté aux services database et nextjs dans compose.yml)
+#
+# Usage (indépendant de compose.yml — Watchtower voit TOUS les conteneurs via /var/run/docker.sock) :
+#   docker compose -f compose.watchtower.yml --env-file .env.prod up -d      # prod
+#   docker compose -f compose.watchtower.yml --env-file .env.staging up -d   # staging
+#
+# Les deux instances peuvent coexister — chacune surveille les conteneurs
+# labelisés de son environnement via les règles scope.
+
+services:
+  # ── Instance PROD ──────────────────────────────────────────────
+  watchtower-prod:
+    image: containrrr/watchtower:latest
+    container_name: watchtower-prod
+    restart: unless-stopped
+
+    environment:
+      # Intervalle de scrutation (secondes) — 300 = toutes les 5 minutes
+      WATCHTOWER_POLL_INTERVAL: 300
+      # Nettoyer les images anciennes après redéploiement
+      WATCHTOWER_CLEANUP: true
+      # Ne redémarrer QUE les conteneurs labelisés watchtower.enable=true
+      WATCHTOWER_LABEL_ENABLE: true
+      # Scope : ne surveiller QUE les conteneurs portant ce label scope
+      # Chaque instance watchtower utilise un scope différent (prod / staging)
+      # pour ne pas toucher aux conteneurs de l'autre environnement.
+      WATCHTOWER_SCOPE: prod
+      # Timeout d'arrêt gracieux avant kill (30s)
+      WATCHTOWER_TIMEOUT: 30s
+      # Inclure les conteneurs arrêtés dans la surveillance
+      WATCHTOWER_INCLUDE_STOPPED: false
+      # Mode dry-run : surveiller sans redémarrer (pratique pour tester)
+      # Passer à "true" en staging pour valider que les notifications arrivent
+      WATCHTOWER_MONITOR_ONLY: false
+      # Intervalle de notification des mises à jour disponibles
+      WATCHTOWER_NOTIFICATIONS_REPORT: always
+      # Si tu veux des notifications Slack, décommente :
+      # WATCHTOWER_NOTIFICATIONS: slack
+      # WATCHTOWER_NOTIFICATION_SLACK_HOOK_URL: https://hooks.slack.com/services/...
+
+    volumes:
+      # Socket Docker — nécessaire pour voir et redémarrer les conteneurs
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+    # Pas de réseau spécifique — Watchtower utilise le socket Docker,
+    # il voit tous les conteneurs sur tous les réseaux.
+
+  # ── Instance STAGING ───────────────────────────────────────────
+  watchtower-staging:
+    image: containrrr/watchtower:latest
+    container_name: watchtower-staging
+    restart: unless-stopped
+
+    environment:
+      WATCHTOWER_POLL_INTERVAL: 300
+      WATCHTOWER_CLEANUP: true
+      WATCHTOWER_LABEL_ENABLE: true
+      # Scope différent : staging ne voit que les conteneurs labelisés scope=staging
+      WATCHTOWER_SCOPE: staging
+      WATCHTOWER_TIMEOUT: 30s
+      WATCHTOWER_INCLUDE_STOPPED: false
+      # STAGING : mode dry-run par défaut (ne redémarre pas)
+      # → passer à false une fois que tu as validé le fonctionnement
+      WATCHTOWER_MONITOR_ONLY: true
+      WATCHTOWER_NOTIFICATIONS_REPORT: always
+
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro

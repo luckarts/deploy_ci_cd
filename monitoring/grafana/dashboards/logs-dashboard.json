@@ -1,0 +1,121 @@
+{
+  "title": "Logs — Poker Training",
+  "uid": "poker-training-logs",
+  "tags": ["poker-training", "logs"],
+  "timezone": "browser",
+  "editable": true,
+  "refresh": "30s",
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "templating": {
+    "list": [
+      {
+        "name": "container",
+        "type": "query",
+        "datasource": "Loki",
+        "query": "label_values(container_name)",
+        "refresh": 1,
+        "includeAll": true,
+        "multi": true,
+        "sort": 1
+      }
+    ]
+  },
+  "annotations": {
+    "list": []
+  },
+  "panels": [
+    {
+      "title": "Logs Volume by Container",
+      "type": "barchart",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "id": 1,
+      "targets": [
+        {
+          "expr": "sum by(container_name) (count_over_time({container_name=~\"$container\"}[5m]))",
+          "legendFormat": "{{ container_name }}",
+          "refId": "A",
+          "datasource": "Loki"
+        }
+      ]
+    },
+    {
+      "title": "Error Logs (Loki)",
+      "type": "logs",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "id": 2,
+      "targets": [
+        {
+          "expr": "{container_name=~\"$container\"} |= \"error\"",
+          "refId": "A",
+          "datasource": "Loki"
+        }
+      ]
+    },
+    {
+      "title": "Warning Logs",
+      "type": "logs",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "id": 3,
+      "targets": [
+        {
+          "expr": "{container_name=~\"$container\"} |= \"warn\"",
+          "refId": "A",
+          "datasource": "Loki"
+        }
+      ]
+    },
+    {
+      "title": "SSH Auth Failures",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "id": 4,
+      "targets": [
+        {
+          "expr": "sum by(container_name) (count_over_time({container_name=\"crowdsec\"} |= \"Failed password\" [5m]))",
+          "legendFormat": "SSH failures",
+          "refId": "A",
+          "datasource": "Loki"
+        }
+      ]
+    },
+    {
+      "title": "HTTP 4xx/5xx by Service",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+      "id": 5,
+      "targets": [
+        {
+          "expr": "sum by(container_name) (count_over_time({container_name=\"traefik\"} |= \" 4\" [5m]))",
+          "legendFormat": "4xx — {{ container_name }}",
+          "refId": "A",
+          "datasource": "Loki"
+        },
+        {
+          "expr": "sum by(container_name) (count_over_time({container_name=\"traefik\"} |= \" 5\" [5m]))",
+          "legendFormat": "5xx — {{ container_name }}",
+          "refId": "B",
+          "datasource": "Loki"
+        }
+      ]
+    },
+    {
+      "title": "All Logs (Live)",
+      "type": "logs",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 24 },
+      "id": 6,
+      "targets": [
+        {
+          "expr": "{container_name=~\"$container\"}",
+          "refId": "A",
+          "datasource": "Loki"
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 38,
+  "version": 1
+}

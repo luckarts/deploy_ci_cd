@@ -1,0 +1,32 @@
+global:
+  resolve_timeout: 5m
+  smtp_smarthost: 'smtp-relay.brevo.com:587'
+  smtp_from: 'monitoring@bachelart.fr'
+  smtp_auth_username: '${ALERTMANAGER_SMTP_USERNAME}'
+  smtp_auth_password: '${ALERTMANAGER_SMTP_PASSWORD}'
+  smtp_require_tls: true
+
+route:
+  receiver: 'email-admin'
+  group_by: ['alertname', 'severity']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+
+receivers:
+  - name: 'email-admin'
+    email_configs:
+      - to: 'luc.bachelerieart@gmail.com'
+        html: '{{ template "email.default.html" . }}'
+        headers:
+          subject: '{{ template "email.subject" . }}'
+
+templates:
+  - '/etc/alertmanager/templates/*.tmpl'
+
+inhibit_rules:
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'instance']

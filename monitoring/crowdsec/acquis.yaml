@@ -1,0 +1,17 @@
+# CrowdSec acquisition configuration
+# Sources de logs pour la détection d'intrusion
+
+filenames:
+  - /var/log/auth.log
+  - /var/log/syslog
+
+labels:
+  type: syslog
+
+---
+
+source: docker
+labels:
+  type: traefik
+container_name:
+  - traefik

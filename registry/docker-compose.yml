@@ -1,0 +1,33 @@
+services:
+  registry:
+    image: registry:2
+    container_name: registry
+    restart: unless-stopped
+    environment:
+      REGISTRY_HTTP_ADDR: 0.0.0.0:5000
+      REGISTRY_AUTH: htpasswd
+      REGISTRY_AUTH_HTPASSWD_REALM: Registry Realm
+      REGISTRY_AUTH_HTPASSWD_PATH: /auth/htpasswd
+    volumes:
+      - registry_data:/var/lib/registry
+      - ./htpasswd:/auth/htpasswd:ro
+    networks:
+      - traefik-web
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.registry.rule=Host(`registry.bachelart.fr`)"
+      - "traefik.http.routers.registry.entrypoints=websecure"
+      - "traefik.http.routers.registry.tls.certresolver=letsencrypt"
+      - "traefik.http.services.registry.loadbalancer.server.port=5000"
+      - "traefik.http.middlewares.registry-redirect.redirectScheme.scheme=https"
+      - "traefik.http.middlewares.registry-redirect.redirectScheme.permanent=true"
+      - "traefik.http.routers.registry-http.rule=Host(`registry.bachelart.fr`) && !PathPrefix(`/.well-known/acme-challenge/`)"
+      - "traefik.http.routers.registry-http.entrypoints=web"
+      - "traefik.http.routers.registry-http.middlewares=registry-redirect"
+
+volumes:
+  registry_data:
+
+networks:
+  traefik-web:
+    external: true
