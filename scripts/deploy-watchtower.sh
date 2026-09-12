@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 # deploy-watchtower.sh — Déploiement de Watchtower (prod ou staging)
 # Usage : ./deploy-watchtower.sh <prod|staging>
 #   ./deploy-watchtower.sh prod     → lance watchtower, active scope prod

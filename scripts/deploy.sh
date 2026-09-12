@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 # deploy.sh — Déploiement de l'infra partagée (orchestrateur transverse).
 # Usage : ./deploy.sh <networks|traefik|monitoring|registry|watchtower|all>
 #
