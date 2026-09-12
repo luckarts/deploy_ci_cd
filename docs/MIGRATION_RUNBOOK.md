@@ -7,14 +7,18 @@ vérification avant de passer à la suivante.
 
 ## 0. Pré-requis
 
+Ce repo (`deploy_ci_cd`) est l'**orchestrateur d'infra partagée** —
+traefik, monitoring, registry Docker, watchtower. Il ne contient **pas**
+les apps : `portfolio` garde son `compose.yml` + `.env.prod`/`.env.staging`
+dans son propre repo (`my-app/deploy`), `poker_training` garde le sien
+dans le sien. Chaque projet docker a son `.env`.
+
 ```bash
-# Cloner le nouveau repo centralisé (si pas déjà fait)
+# Cloner le repo orchestrateur (si pas déjà fait)
 git clone https://github.com/luckarts/deploy_ci_cd.git ~/deploy
 cd ~/deploy
 
-# Remplir les fichiers d'env réels (jamais commités)
-cp .env.prod.example .env.prod && vim .env.prod
-cp .env.staging.example .env.staging && vim .env.staging
+# Remplir le fichier d'env du monitoring (seul .env de ce repo)
 cp monitoring/.env.monitoring.example monitoring/.env.monitoring && vim monitoring/.env.monitoring
 ```
 
@@ -120,28 +124,41 @@ les commiter.
 
 ## 4. Nettoyer `deploy/` du repo `my-app`
 
-Le dossier `deploy/` dans `my-app` est maintenant dupliqué/obsolète —
-toute la config vit dans `deploy_ci_cd`.
+`deploy_ci_cd` est l'orchestrateur d'infra **partagée** uniquement — pas
+l'app. Dans `my-app/deploy`, tout ce qui est transverse (`monitoring/`,
+`traefik/`, `registry/`, `compose.watchtower.yml`, `scripts/`, `htpasswd`)
+est maintenant dupliqué avec `deploy_ci_cd` → à retirer. Ce qui reste
+dans `my-app/deploy` : `compose.yml`, `.env.prod(.example)`,
+`.env.staging(.example)`, `BLOG_DEPLOY.md`, `OPERATIONS.md` — l'app garde
+son propre stack et son propre `.env`.
 
 ```bash
 cd /home/luc/Documents/portfolio_2026/my-app
-git rm -r deploy
-git commit -m "chore: remove deploy/ — migrated to deploy_ci_cd repo"
+git rm -r deploy/monitoring deploy/traefik deploy/registry \
+  deploy/compose.watchtower.yml deploy/scripts deploy/htpasswd
+git commit -m "chore(deploy): remove infra now centralized in deploy_ci_cd repo"
 git push
 ```
 
-Ne pas supprimer `BLOG_DEPLOY.md` ni `OPERATIONS.md` sans vérifier qu'ils
-ont bien été copiés dans le nouveau repo (ils le sont — commit `c0c956f`
-de `deploy_ci_cd`).
+Déjà fait localement (commit `13e0b7d` sur la branche `develop`) — reste
+à pousser si pas encore fait.
 
 ---
 
-## 5. Déployer la stack unifiée
+## 5. Déployer l'infra partagée, puis chaque app
 
 ```bash
+# Infra partagée d'abord — crée traefik-web + monitoring-network
 cd ~/deploy
-./scripts/deploy.sh all       # réseaux + traefik + monitoring + portfolio prod
-./scripts/deploy.sh staging   # si besoin de l'environnement staging aussi
+./scripts/deploy.sh all       # traefik + monitoring + registry + watchtower
+
+# Puis chaque app, depuis son propre repo
+cd /chemin/vers/portfolio/deploy   # my-app/deploy en local
+docker compose -f compose.yml --env-file .env.prod up -d
+docker compose -f compose.yml --env-file .env.staging up -d   # si besoin
+
+cd /chemin/vers/poker_training/deploy
+docker compose -f compose.yml --env-file .env.<...> up -d
 ```
 
 Vérification :
@@ -152,7 +169,8 @@ docker ps --format 'table {{.Names}}\t{{.Status}}'
 
 docker network inspect monitoring-network --format '{{range .Containers}}{{.Name}} {{end}}'
 # doit lister : prometheus, grafana, loki, promtail, cadvisor, alertmanager,
-# crowdsec, traefik, <projet>-nextjs
+# crowdsec, traefik, <projet>-nextjs (portfolio, une fois lancé et rattaché
+# au réseau monitoring-network dans son compose.yml)
 ```
 
 Ouvrir `https://monitoring.bachelart.fr` (Grafana) — vérifier que les

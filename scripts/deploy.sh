@@ -1,6 +1,11 @@
 #!/bin/sh
-# deploy.sh — Déploiement manuel depuis le dossier deploy/ centralisé.
-# Usage : ./deploy.sh <networks|traefik|monitoring|prod|staging|all>
+# deploy.sh — Déploiement de l'infra partagée (orchestrateur transverse).
+# Usage : ./deploy.sh <networks|traefik|monitoring|registry|watchtower|all>
+#
+# Ce repo NE contient PAS les apps (portfolio, poker_training) — chacune
+# garde son compose.yml + .env dans son propre projet. Ici : uniquement
+# ce qui est partagé entre tous les projets (traefik, monitoring, registry
+# docker, watchtower).
 #
 # Workflow serveur :
 #   cd deploy && git pull
@@ -38,37 +43,36 @@ case "${1:-help}" in
     echo "✅ Monitoring lancé"
     ;;
 
-  prod)
-    "$0" networks
-    echo "🚀 Déploiement portfolio PROD..."
-    docker compose -f "$ROOT_DIR/compose.yml" --env-file "$ROOT_DIR/.env.prod" up -d
-    echo "✅ Portfolio PROD lancé"
+  registry)
+    echo "🚀 Déploiement registry Docker..."
+    docker compose -f "$ROOT_DIR/registry/docker-compose.yml" up -d
+    echo "✅ Registry lancé"
     ;;
 
-  staging)
-    "$0" networks
-    echo "🧪 Déploiement portfolio STAGING..."
-    docker compose -f "$ROOT_DIR/compose.yml" --env-file "$ROOT_DIR/.env.staging" up -d
-    echo "✅ Portfolio STAGING lancé"
+  watchtower)
+    "$SCRIPT_DIR/deploy-watchtower.sh" both
     ;;
 
   all)
     "$0" networks
     "$0" traefik
     "$0" monitoring
-    "$0" prod
-    echo "✅ Stack complète (traefik + monitoring + prod) déployée"
+    "$0" registry
+    "$0" watchtower
+    echo "✅ Infra partagée (traefik + monitoring + registry + watchtower) déployée"
+    echo "ℹ️  Les apps (portfolio, poker_training) se déploient depuis leur propre repo,"
+    echo "   une fois traefik-web + monitoring-network prêts."
     ;;
 
   help|*)
-    echo "Usage: $0 <networks|traefik|monitoring|prod|staging|all>"
+    echo "Usage: $0 <networks|traefik|monitoring|registry|watchtower|all>"
     echo ""
     echo "  networks   → Crée traefik-web + monitoring-network si absents"
     echo "  traefik    → Déploie Traefik"
     echo "  monitoring → Déploie prometheus/loki/grafana/promtail/cadvisor/alertmanager/crowdsec"
-    echo "  prod       → Déploie le portfolio (prod)"
-    echo "  staging    → Déploie le portfolio (staging)"
-    echo "  all        → traefik + monitoring + prod"
+    echo "  registry   → Déploie le registry Docker privé"
+    echo "  watchtower → Déploie Watchtower (prod + staging)"
+    echo "  all        → traefik + monitoring + registry + watchtower"
     exit 1
     ;;
 esac
