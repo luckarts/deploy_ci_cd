@@ -34,6 +34,7 @@ metrics:
   prometheus:
     addEntryPointsLabels: true
     addServicesLabels: true
+    addRoutersLabels: true
     entryPoint: metrics
 
 http:

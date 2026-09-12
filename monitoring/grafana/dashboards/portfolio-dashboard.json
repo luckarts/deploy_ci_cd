@@ -1,0 +1,175 @@
+{
+  "title": "Portfolio",
+  "uid": "portfolio-main",
+  "tags": ["portfolio", "infrastructure", "logs"],
+  "timezone": "browser",
+  "editable": true,
+  "refresh": "30s",
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "templating": {
+    "list": [
+      {
+        "name": "container",
+        "type": "query",
+        "datasource": "Loki",
+        "query": "label_values(container_name)",
+        "current": {
+          "text": ["portfolio-prod-nextjs", "portfolio-prod-database", "portfolio-staging-nextjs", "portfolio-staging-database"],
+          "value": ["portfolio-prod-nextjs", "portfolio-prod-database", "portfolio-staging-nextjs", "portfolio-staging-database"]
+        },
+        "refresh": 1,
+        "includeAll": true,
+        "multi": true,
+        "sort": 1
+      }
+    ]
+  },
+  "annotations": {
+    "list": []
+  },
+  "panels": [
+    {
+      "title": "CPU par container",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "id": 1,
+      "targets": [
+        {
+          "expr": "sum by(name) (rate(container_cpu_usage_seconds_total{name=~\"portfolio-(prod|staging)-.*\"}[5m])) * 100",
+          "legendFormat": "{{ name }}",
+          "refId": "A",
+          "datasource": "Prometheus"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "percent" }
+      }
+    },
+    {
+      "title": "Mémoire par container",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "id": 2,
+      "targets": [
+        {
+          "expr": "container_memory_usage_bytes{name=~\"portfolio-(prod|staging)-.*\"}",
+          "legendFormat": "{{ name }}",
+          "refId": "A",
+          "datasource": "Prometheus"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "bytes" }
+      }
+    },
+    {
+      "title": "Traefik — Requêtes/s (routers portfolio)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 8 },
+      "id": 3,
+      "targets": [
+        {
+          "expr": "sum by(router) (rate(traefik_router_requests_total{router=~\"portfolio.*\"}[5m]))",
+          "legendFormat": "{{ router }}",
+          "refId": "A",
+          "datasource": "Prometheus"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "reqps" }
+      }
+    },
+    {
+      "title": "Traefik — Latence P95 (routers portfolio)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 8 },
+      "id": 4,
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(traefik_router_request_duration_seconds_bucket{router=~\"portfolio.*\"}[5m])) by (le, router))",
+          "legendFormat": "P95 {{ router }}",
+          "refId": "A",
+          "datasource": "Prometheus"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "s" }
+      }
+    },
+    {
+      "title": "Traefik — Codes de statut (portfolio)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 8 },
+      "id": 5,
+      "targets": [
+        {
+          "expr": "sum(rate(traefik_router_requests_total{router=~\"portfolio.*\", code=~\"2..\"}[5m]))",
+          "legendFormat": "2xx",
+          "refId": "A",
+          "datasource": "Prometheus"
+        },
+        {
+          "expr": "sum(rate(traefik_router_requests_total{router=~\"portfolio.*\", code=~\"4..\"}[5m]))",
+          "legendFormat": "4xx",
+          "refId": "B",
+          "datasource": "Prometheus"
+        },
+        {
+          "expr": "sum(rate(traefik_router_requests_total{router=~\"portfolio.*\", code=~\"5..\"}[5m]))",
+          "legendFormat": "5xx",
+          "refId": "C",
+          "datasource": "Prometheus"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "reqps" }
+      }
+    },
+    {
+      "title": "Error Logs (nextjs + database)",
+      "type": "logs",
+      "gridPos": { "h": 10, "w": 12, "x": 0, "y": 16 },
+      "id": 6,
+      "targets": [
+        {
+          "expr": "{container_name=~\"$container\"} |~ \"(?i)error|fatal|panic\"",
+          "refId": "A",
+          "datasource": "Loki"
+        }
+      ]
+    },
+    {
+      "title": "All Logs (Live)",
+      "type": "logs",
+      "gridPos": { "h": 10, "w": 12, "x": 12, "y": 16 },
+      "id": 7,
+      "targets": [
+        {
+          "expr": "{container_name=~\"$container\"}",
+          "refId": "A",
+          "datasource": "Loki"
+        }
+      ]
+    },
+    {
+      "title": "Logs Volume by Container",
+      "type": "barchart",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 26 },
+      "id": 8,
+      "targets": [
+        {
+          "expr": "sum by(container_name) (count_over_time({container_name=~\"$container\"}[5m]))",
+          "legendFormat": "{{ container_name }}",
+          "refId": "A",
+          "datasource": "Loki"
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 38,
+  "version": 1
+}
