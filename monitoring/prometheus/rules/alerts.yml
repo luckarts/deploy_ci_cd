@@ -54,3 +54,12 @@ groups:
         annotations:
           summary: "Traefik is down"
           description: "Traefik metrics endpoint has been unreachable for 1 minute."
+
+      - alert: ContainerCrashLooping
+        expr: changes(container_start_time_seconds{name!=""}[15m]) > 2
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Container {{ $labels.name }} is crash-looping"
+          description: "{{ $labels.name }} restarted {{ $value }} times in the last 15 minutes."

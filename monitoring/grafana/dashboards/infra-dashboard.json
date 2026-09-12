@@ -1,0 +1,121 @@
+{
+  "title": "Infra — Erreurs & Crash-loops",
+  "uid": "infra-errors",
+  "tags": ["infra", "logs", "errors"],
+  "timezone": "browser",
+  "editable": true,
+  "refresh": "30s",
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "templating": {
+    "list": [
+      {
+        "name": "container",
+        "type": "query",
+        "datasource": "Loki",
+        "query": "label_values(container_name)",
+        "current": {
+          "text": ["loki", "alertmanager", "watchtower-prod", "watchtower-staging", "crowdsec", "prometheus", "grafana", "traefik", "registry"],
+          "value": ["loki", "alertmanager", "watchtower-prod", "watchtower-staging", "crowdsec", "prometheus", "grafana", "traefik", "registry"]
+        },
+        "refresh": 1,
+        "includeAll": true,
+        "multi": true,
+        "sort": 1
+      }
+    ]
+  },
+  "annotations": {
+    "list": []
+  },
+  "panels": [
+    {
+      "title": "Container Restarts (15m window)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 0 },
+      "id": 1,
+      "description": "Nombre de redémarrages par container sur une fenêtre glissante de 15 min — un container qui crash-loop apparaît en pic répété.",
+      "targets": [
+        {
+          "expr": "changes(container_start_time_seconds{name!=\"\"}[15m])",
+          "legendFormat": "{{ name }}",
+          "refId": "A",
+          "datasource": "Prometheus"
+        }
+      ]
+    },
+    {
+      "title": "Error Logs — Infra",
+      "type": "logs",
+      "gridPos": { "h": 10, "w": 12, "x": 0, "y": 8 },
+      "id": 2,
+      "targets": [
+        {
+          "expr": "{container_name=~\"$container\"} |~ \"(?i)error|fatal|panic\"",
+          "refId": "A",
+          "datasource": "Loki"
+        }
+      ]
+    },
+    {
+      "title": "Warning Logs — Infra",
+      "type": "logs",
+      "gridPos": { "h": 10, "w": 12, "x": 12, "y": 8 },
+      "id": 3,
+      "targets": [
+        {
+          "expr": "{container_name=~\"$container\"} |~ \"(?i)warn\"",
+          "refId": "A",
+          "datasource": "Loki"
+        }
+      ]
+    },
+    {
+      "title": "Logs Volume by Container",
+      "type": "barchart",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 18 },
+      "id": 4,
+      "targets": [
+        {
+          "expr": "sum by(container_name) (count_over_time({container_name=~\"$container\"}[5m]))",
+          "legendFormat": "{{ container_name }}",
+          "refId": "A",
+          "datasource": "Loki"
+        }
+      ]
+    },
+    {
+      "title": "Firing Alerts (Alertmanager)",
+      "type": "table",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 18 },
+      "id": 5,
+      "targets": [
+        {
+          "expr": "ALERTS{alertstate=\"firing\"}",
+          "format": "table",
+          "instant": true,
+          "refId": "A",
+          "datasource": "Prometheus"
+        }
+      ]
+    },
+    {
+      "title": "All Logs — Infra (Live)",
+      "type": "logs",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 26 },
+      "id": 6,
+      "targets": [
+        {
+          "expr": "{container_name=~\"$container\"}",
+          "refId": "A",
+          "datasource": "Loki"
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 38,
+  "version": 1
+}
