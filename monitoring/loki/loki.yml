@@ -12,6 +12,8 @@ ingester:
   chunk_idle_period: 15m
   chunk_retain_period: 5m
   max_chunk_age: 1h
+  wal:
+    dir: /data/loki/wal
 
 schema_config:
   configs:
