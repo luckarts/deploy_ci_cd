@@ -118,6 +118,12 @@ services:
       COLLECTIONS: 'crowdsecurity/linux crowdsecurity/nginx crowdsecurity/traefik crowdsecurity/http-cve'
       GID: "${PGID:-1000}"
       UID: "${PUID:-1000}"
+    ports:
+      # LAPI exposée en local uniquement — pour le bouncer natif (voir
+      # scripts/setup-crowdsec.sh). Pas d'image Docker officielle pour
+      # cs-firewall-bouncer (il manipule iptables/nftables sur l'hôte,
+      # CrowdSec le distribue en paquet natif + systemd, pas en container).
+      - "127.0.0.1:8080:8080"
     volumes:
       - crowdsec-db:/var/lib/crowdsec/data
       - crowdsec-config:/etc/crowdsec
@@ -127,18 +133,6 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
       - monitoring-network
-
-  crowdsec-firewall-bouncer:
-    image: crowdsecurity/firewall-bouncer:latest
-    container_name: crowdsec-firewall-bouncer
-    restart: unless-stopped
-    network_mode: host
-    environment:
-      API_URL: http://127.0.0.1:8080
-      API_KEY: ""
-    cap_add:
-      - NET_ADMIN
-      - NET_RAW
 
 networks:
   monitoring-network:
