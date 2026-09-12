@@ -1,32 +1,17 @@
-# CrowdSec profiles — actions sur détection
-name: default_profile
+# CrowdSec profiles — remediation par défaut (schéma officiel)
+# Référence : https://raw.githubusercontent.com/crowdsecurity/crowdsec/master/config/profiles.yaml
+name: default_ip_remediation
 filters:
-  # SSH bruteforce → ban 4h
-  - alert_id: crowdsecurity/ssh-bf
-    decisions:
-      - type: ban
-        duration: 4h
-
-  # HTTP scan → ban 1h
-  - alert_id: crowdsecurity/http-scan-unique_id
-    decisions:
-      - type: ban
-        duration: 1h
-
-  # HTTP crawler → ban 1h
-  - alert_id: crowdsecurity/http-crawl-non_statics
-    decisions:
-      - type: ban
-        duration: 1h
-
-  # Traefik bad user-agent → ban 2h
-  - alert_id: crowdsecurity/http-bad-user-agent
-    decisions:
-      - type: ban
-        duration: 2h
-
-  # Après 3 bans → ban permanent
-  - alert_id: crowdsecurity/multi-bounces
-    decisions:
-      - type: ban
-        duration: 720h
+ - Alert.Remediation == true && Alert.GetScope() == "Ip"
+decisions:
+ - type: ban
+   duration: 4h
+on_success: break
+---
+name: default_range_remediation
+filters:
+ - Alert.Remediation == true && Alert.GetScope() == "Range"
+decisions:
+ - type: ban
+   duration: 4h
+on_success: break

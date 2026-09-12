@@ -130,6 +130,7 @@ services:
       - ./crowdsec/acquis.yaml:/etc/crowdsec/acquis.yaml:ro
       - ./crowdsec/profiles.yaml:/etc/crowdsec/profiles.yaml:ro
       - /var/log/auth.log:/var/log/auth.log:ro
+      - /var/log/syslog:/var/log/syslog:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
       - monitoring-network
