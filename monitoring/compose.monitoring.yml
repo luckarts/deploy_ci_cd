@@ -67,6 +67,9 @@ services:
       - "traefik.http.routers.grafana.entrypoints=websecure"
       - "traefik.http.routers.grafana.tls.certresolver=letsencrypt"
       - "traefik.http.services.grafana.loadbalancer.server.port=3000"
+      # Accès restreint — anonymous Viewer expose logs/metrics sensibles sur internet
+      - "traefik.http.middlewares.grafana-ipwhitelist.ipallowlist.sourcerange=37.67.207.33/32"
+      - "traefik.http.routers.grafana.middlewares=grafana-ipwhitelist"
 
   loki-init:
     image: alpine:latest
