@@ -37,6 +37,19 @@ compactor:
   retention_enabled: true
   delete_request_store: filesystem
 
+ruler:
+  storage:
+    type: local
+    local:
+      directory: /data/loki/rules
+  rule_path: /data/loki/rules-temp
+  alertmanager_url: http://alertmanager:9093
+  enable_alertmanager_v2: true
+  ring:
+    kvstore:
+      store: inmemory
+  enable_api: true
+
 limits_config:
   max_label_names_per_series: 30
   retention_period: 720h

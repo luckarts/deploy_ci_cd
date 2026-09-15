@@ -90,6 +90,7 @@ services:
       - '-config.file=/etc/loki/loki.yml'
     volumes:
       - ./loki/loki.yml:/etc/loki/loki.yml:ro
+      - ./loki/rules:/data/loki/rules:ro
       - loki-data:/data/loki
     networks:
       - monitoring-network
