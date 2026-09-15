@@ -46,7 +46,7 @@ services:
       # de version d'API Docker tombe à 1.25 par défaut, en dessous du
       # minimum accepté par les Docker Engine récents (1.40+). Forcer une
       # version compatible ici évite "client version 1.25 is too old".
-      DOCKER_API_VERSION: "1.41"
+      DOCKER_API_VERSION: "1.44"
       # Si tu veux des notifications Slack, décommente :
       # WATCHTOWER_NOTIFICATIONS: slack
       # WATCHTOWER_NOTIFICATION_SLACK_HOOK_URL: https://hooks.slack.com/services/...
@@ -76,7 +76,7 @@ services:
       # → passer à false une fois que tu as validé le fonctionnement
       WATCHTOWER_MONITOR_ONLY: true
       WATCHTOWER_NOTIFICATIONS_REPORT: always
-      DOCKER_API_VERSION: "1.41"
+      DOCKER_API_VERSION: "1.44"
 
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
