@@ -54,8 +54,8 @@ services:
       # Credentials registry privé — Watchtower peut les injecter
       # dans le socket Docker pour le pull. Décommente si tu n'as pas
       # fait docker login.
-      # WATCHTOWER_REGISTRY_USER: ${REGISTRY_USER}
-      # WATCHTOWER_REGISTRY_PASS: ${REGISTRY_PASS}
+      WATCHTOWER_REGISTRY_USER: ${REGISTRY_USER}
+      WATCHTOWER_REGISTRY_PASS: ${REGISTRY_PASS}
 
     volumes:
       # Socket Docker — nécessaire pour voir et redémarrer les conteneurs
@@ -85,8 +85,8 @@ services:
       DOCKER_API_VERSION: "1.44"
 
       # Credentials registry privé
-      # WATCHTOWER_REGISTRY_USER: ${REGISTRY_USER}
-      # WATCHTOWER_REGISTRY_PASS: ${REGISTRY_PASS}
+      WATCHTOWER_REGISTRY_USER: ${REGISTRY_USER}
+      WATCHTOWER_REGISTRY_PASS: ${REGISTRY_PASS}
 
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
